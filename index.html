@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Sale Risk Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --ink-light: #4a4a6a;
+    --ink-muted: #9090a8;
+    --paper: #f8f7f4;
+    --paper-2: #f0efe9;
+    --paper-3: #e8e6de;
+    --accent: #c84b2f;
+    --accent-light: #f5ece9;
+    --green: #2d6a4f;
+    --green-light: #e8f5ee;
+    --amber: #b5470a;
+    --amber-light: #fdf0e8;
+    --blue: #1a4a7a;
+    --blue-light: #e8f0f8;
+    --border: rgba(26,26,46,0.12);
+    --border-strong: rgba(26,26,46,0.25);
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --r: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 2rem 6rem;
+  }
+
+  /* ── Header ── */
+  .header {
+    border-bottom: 1.5px solid var(--border-strong);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .header-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 0.75rem;
+  }
+
+  .header-sub {
+    color: var(--ink-light);
+    font-size: 15px;
+    font-weight: 300;
+    max-width: 560px;
+  }
+
+  .header-meta {
+    margin-top: 1.25rem;
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .meta-item strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* ── Section ── */
+  .section {
+    margin-bottom: 3.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  /* ── KPI cards ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .kpi {
+    background: var(--paper);
+    padding: 1.1rem 1.25rem;
+  }
+
+  .kpi-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .kpi-value {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.amber { color: var(--amber); }
+  .kpi-value.red { color: var(--accent); }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 0.3rem;
+  }
+
+  /* ── Chart wrapper ── */
+  .chart-wrap {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .chart-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    margin-bottom: 1rem;
+  }
+
+  .chart-inner {
+    position: relative;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-light);
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .legend-line {
+    width: 20px;
+    height: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Scenario band ── */
+  .band-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 2px 7px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+
+  /* ── Risk table ── */
+  .risk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .risk-table thead th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    font-weight: 500;
+    padding: 0.6rem 0.9rem;
+    text-align: right;
+    border-bottom: 1.5px solid var(--border-strong);
+    background: var(--paper-2);
+  }
+
+  .risk-table thead th:first-child { text-align: left; }
+
+  .risk-table tbody td {
+    padding: 0.55rem 0.9rem;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  .risk-table tbody td:first-child {
+    text-align: left;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  .risk-table tbody tr:hover { background: var(--paper-2); }
+
+  .risk-table tbody tr.row-base { background: var(--blue-light); }
+  .risk-table tbody tr.row-safe { background: var(--green-light); }
+  .risk-table tbody tr.row-caution { background: var(--amber-light); }
+  .risk-table tbody tr.row-danger { background: #fdf0f0; }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  .pill-safe { background: #c8e6d6; color: var(--green); }
+  .pill-caution { background: #fde0c0; color: var(--amber); }
+  .pill-danger { background: #fac8c8; color: #8b2020; }
+
+  /* ── Decision matrix ── */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .decision-card {
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+
+  .decision-card-header {
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  .decision-card-header.green { background: var(--green-light); color: var(--green); }
+  .decision-card-header.amber { background: var(--amber-light); color: var(--amber); }
+  .decision-card-header.red { background: #fdf0f0; color: #8b2020; }
+
+  .decision-card-body {
+    padding: 1rem;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--ink-light);
+  }
+
+  .decision-card-body strong {
+    color: var(--ink);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .decision-card-body ul {
+    padding-left: 1.1rem;
+    margin-top: 0.4rem;
+  }
+
+  .decision-card-body li { margin-bottom: 0.25rem; }
+
+  /* ── Sensitivity table ── */
+  .sens-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+
+  .sens-table th {
+    padding: 0.5rem 0.75rem;
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .sens-table td {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border);
+    text-align: center;
+    color: var(--ink);
+  }
+
+  .sens-table td.row-label {
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--paper-2);
+  }
+
+  .sens-cell-safe { background: #d8f0e4; color: var(--green); font-weight: 500; }
+  .sens-cell-caution { background: #fde8cc; color: var(--amber); font-weight: 500; }
+  .sens-cell-danger { background: #fad4d4; color: #8b2020; font-weight: 500; }
+
+  /* ── Probability bar ── */
+  .prob-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .prob-label {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--ink-light);
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .prob-bar-wrap {
+    flex: 1;
+    background: var(--paper-3);
+    border-radius: 3px;
+    height: 22px;
+    overflow: hidden;
+  }
+
+  .prob-bar {
+    height: 100%;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: white;
+    transition: width 0.6s ease;
+  }
+
+  .prob-pct {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Callout box ── */
+  .callout {
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    background: var(--accent-light);
+    border-radius: 0 var(--r) var(--r) 0;
+    margin-top: 1.5rem;
+  }
+
+  .callout-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  .callout p {
+    font-size: 13px;
+    color: var(--ink-light);
+    line-height: 1.7;
+  }
+
+  .callout p + p { margin-top: 0.5rem; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--ink-muted);
+    line-height: 1.8;
+  }
+
+  @media (max-width: 600px) {
+    .page { padding: 1.5rem 1rem 4rem; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-eyebrow">Risk Analysis Report</div>
+    <h1>Home Sale &amp;<br><em>Purchase Closing</em> Risk</h1>
+    <p class="header-sub">A structured risk assessment of pricing scenarios for the sale of an existing property and ability to fund closing costs on a new home purchase.</p>
+    <div class="header-meta">
+      <div class="meta-item">Current ask <strong>$330,000</strong></div>
+      <div class="meta-item">Remaining mortgage <strong>$229,611</strong></div>
+      <div class="meta-item">Savings tolerance <strong>$0 preferred / $5,000 max</strong></div>
+      <div class="meta-item">Closing cost estimates <strong>$45k – $75k (9 scenarios)</strong></div>
+    </div>
+  </header>
+
+  <!-- Section 1: Executive Summary KPIs -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">Executive Summary</h2>
+    </div>
+
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <div class="callout">
+      <div class="callout-title">Risk Manager's Bottom Line</div>
+      <p>At the current asking price of $330,000, net proceeds of approximately <strong>$74,729</strong> comfortably exceed the expected closing cost of <strong>$59,736</strong> — leaving a <strong>$14,993 buffer</strong>. The property can be reduced to <strong>$315,000</strong> before any savings are needed, and to <strong>$310,000</strong> before exceeding the $5,000 savings tolerance.</p>
+      <p>The primary risk is not the price reduction itself, but <strong>closing cost uncertainty</strong>. Nine estimates spanning $45k–$75k represent a $30,000 range of uncertainty. The strategic recommendation is to resolve this estimate variance before accepting any offer below $320,000.</p>
+    </div>
+  </section>
+
+  <!-- Section 2: Proceeds vs. Risk Zones -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Proceeds vs. Risk Zones</h2>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">Net sale proceeds at each asking price vs. closing cost scenario band</div>
+      <div class="chart-inner" style="height:340px;">
+        <canvas id="mainChart" role="img" aria-label="Line chart showing net proceeds declining from $74,729 at $330k to $18,320 at $270k, with a green safe zone above the expected cost line, yellow caution zone within $5k below it, and red danger zone beyond that.">Net proceeds range from $74,729 at $330k to $18,320 at $270k. Safe zone is above the $59,736 expected cost. Caution zone is within $5,000 below that. Danger zone is below $54,736.</canvas>
+      </div>
+      <div class="legend" id="main-legend"></div>
+    </div>
+  </section>
+
+  <!-- Section 3: Sensitivity Analysis -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Sensitivity Analysis</h2>
+    </div>
+    <p style="font-size:13px;color:var(--ink-light);margin-bottom:1rem;line-height:1.7;">Each cell shows the savings required (negative = surplus). The table maps every combination of sale price against closing cost scenario. Green = no savings needed. Amber = within $5k tolerance. Red = exceeds tolerance.</p>
+    <div style="overflow-x:auto;">
+      <table class="sens-table" id="sens-table"></table>
+    </div>
+  </section>
+
+  <!-- Section 4: Probability of Success -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Probability of Success</h2>
+    </div>
+    <p style="font-size:13px;color:var(--ink-light);margin-bottom:1.25rem;line-height:1.7;">Treating all nine closing cost estimates as equally likely, the bars below show — at each asking price — what percentage of scenarios leave you without needing savings, within tolerance, or over budget.</p>
+    <div id="prob-chart" style="background:var(--paper);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;"></div>
+  </section>
+
+  <!-- Section 5: Scenario Table -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2 class="section-title">Full Scenario Table</h2>
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);">
+      <table class="risk-table" id="scenario-table"></table>
+    </div>
+  </section>
+
+  <!-- Section 6: Decision Matrix -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2 class="section-title">Decision Matrix</h2>
+    </div>
+    <div class="decision-grid">
+      <div class="decision-card">
+        <div class="decision-card-header green">Zone A — Safe ($315k – $330k)</div>
+        <div class="decision-card-body">
+          <strong>Recommended operating range</strong>
+          Net proceeds cover the average expected closing cost with surplus remaining. No savings required under any expected-value scenario.
+          <ul>
+            <li>Accept offers at or above $315,000</li>
+            <li>Standard negotiation leverage applies</li>
+            <li>Buffer remains even if closing cost trends toward $65k–$70k</li>
+          </ul>
+        </div>
+      </div>
+      <div class="decision-card">
+        <div class="decision-card-header amber">Zone B — Caution ($310k – $315k)</div>
+        <div class="decision-card-body">
+          <strong>Acceptable with conditions</strong>
+          Proceeds fall short of the expected closing cost by up to $5,000. Within stated savings tolerance, but carries meaningful risk if actual closing costs land above average.
+          <ul>
+            <li>Only accept if confident closing cost is ≤$65k</li>
+            <li>Confirm closing cost estimate before signing</li>
+            <li>Have savings liquid and accessible</li>
+          </ul>
+        </div>
+      </div>
+      <div class="decision-card">
+        <div class="decision-card-header red">Zone C — Danger (Below $310k)</div>
+        <div class="decision-card-body">
+          <strong>Exceeds stated risk tolerance</strong>
+          Savings requirement under an average closing cost scenario surpasses $5,000. If closing costs land at the high end, exposure could reach $15,000–$55,000.
+          <ul>
+            <li>Do not accept unless closing cost is fully confirmed</li>
+            <li>Re-evaluate purchase closing cost with lender in writing</li>
+            <li>Only viable if low estimate ($45k–$50k) is confirmed</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: Maximum Regret -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2 class="section-title">Maximum Regret Analysis</h2>
+    </div>
+    <div class="kpi-grid" id="regret-grid"></div>
+    <p style="font-size:13px;color:var(--ink-light);margin-top:1rem;line-height:1.7;">Maximum regret is the worst possible outcome — if the sale price ends up at the low end <em>and</em> closing costs end up at the high end simultaneously. A risk professional uses this number to set hard limits, not as the expected outcome.</p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div>Generated: <span id="gen-date"></span></div>
+    <div>Assumptions: Mortgage $229,611 · Static closing costs $3,591 · Broker fee 6% of sale price · Pro-rated taxes $2,268.94 · 9 closing cost estimates equally weighted</div>
+    <div>This document is for personal financial planning purposes only and does not constitute professional financial or legal advice.</div>
+  </footer>
+
+</div>
+
+<script>
+const MORTGAGE = 229611, STATIC = 3591, BROKER = 0.06, TAXES = 2268.94;
+const ESTIMATES = [75000, 72000, 70000, 65000, 60000, 56000, 50000, 49000, 45000];
+const EST_LABELS = ['$75k', '$72k', '$70k', '$65k', '$60k', '$56k', '$50k', '$49k', '$45k'];
+const SAVINGS_HARD = 5000;
+const EV = Math.round(ESTIMATES.reduce((a,b)=>a+b,0) / ESTIMATES.length);
+const PRICES = [270000,275000,280000,285000,290000,295000,300000,305000,310000,315000,320000,325000,330000];
+const PLABElS = PRICES.map(p => '$'+(p/1000)+'k');
+
+function net(p) { return Math.round(p - MORTGAGE - STATIC - p*BROKER - TAXES); }
+function fmt(n) {
+  if (n === 0) return '—';
+  const abs = Math.abs(Math.round(n));
+  const s = '$' + abs.toLocaleString();
+  return n < 0 ? '-'+s : '+'+s;
+}
+function fmtPlain(n) {
+  return (n<0?'-':'') + '$' + Math.abs(Math.round(n)).toLocaleString();
+}
+
+const proceedsArr = PRICES.map(net);
+
+// Find floor prices
+function findFloor(tol) {
+  for (let i = 0; i < PRICES.length; i++) {
+    if (net(PRICES[i]) >= EV - tol) return PRICES[i];
+  }
+  return null;
+}
+const prefFloor = findFloor(0);
+const hardFloor = findFloor(SAVINGS_HARD);
+const surplus330 = net(330000) - EV;
+
+// ── KPI Grid ──────────────────────────────────────────────────────────────────
+const kpis = [
+  { label: 'Net proceeds @ $330k', value: fmtPlain(net(330000)), cls: 'green', sub: 'Current asking price' },
+  { label: 'Expected closing cost', value: fmtPlain(EV), cls: '', sub: 'Avg of 9 estimates' },
+  { label: 'Current surplus', value: fmtPlain(surplus330), cls: 'green', sub: 'Above expected cost' },
+  { label: 'Preferred price floor', value: '$'+(prefFloor/1000)+'k', cls: '', sub: 'Zero savings needed' },
+  { label: 'Hard price floor', value: '$'+(hardFloor/1000)+'k', cls: 'amber', sub: 'Up to $5k savings' },
+  { label: 'Estimate uncertainty', value: '$30k', cls: 'red', sub: '$45k–$75k range' },
+];
+const kpiGrid = document.getElementById('kpi-grid');
+kpis.forEach(k => {
+  kpiGrid.innerHTML += `<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.cls}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`;
+});
+
+// ── Main Chart ────────────────────────────────────────────────────────────────
+const bgZonesPlugin = {
+  id: 'bgZones',
+  beforeDraw(chart) {
+    const {ctx, chartArea:{left,right,top,bottom}, scales:{y}} = chart;
+    const safeY   = y.getPixelForValue(EV);
+    const cautionY= y.getPixelForValue(EV - SAVINGS_HARD);
+    ctx.save();
+    ctx.fillStyle = 'rgba(200,230,210,0.3)';
+    ctx.fillRect(left, top, right-left, safeY-top);
+    ctx.fillStyle = 'rgba(255,220,170,0.3)';
+    ctx.fillRect(left, safeY, right-left, cautionY-safeY);
+    ctx.fillStyle = 'rgba(250,190,190,0.3)';
+    ctx.fillRect(left, cautionY, right-left, bottom-cautionY);
+
+    // Zone labels
+    ctx.font = '10px DM Mono, monospace';
+    ctx.fillStyle = 'rgba(45,106,79,0.6)';
+    ctx.fillText('SAFE ZONE', left+8, top+16);
+    ctx.fillStyle = 'rgba(181,71,10,0.6)';
+    ctx.fillText('CAUTION', left+8, safeY+15);
+    ctx.fillStyle = 'rgba(200,75,47,0.6)';
+    ctx.fillText('DANGER ZONE', left+8, cautionY+15);
+    ctx.restore();
+  }
+};
+
+const minEst = Math.min(...ESTIMATES);
+const maxEst = Math.max(...ESTIMATES);
+
+new Chart(document.getElementById('mainChart'), {
+  type: 'line',
+  plugins: [bgZonesPlugin],
+  data: {
+    labels: PLABElS,
+    datasets: [
+      {
+        label: 'Net proceeds',
+        data: proceedsArr,
+        borderColor: '#1a4a7a',
+        backgroundColor: 'rgba(26,74,122,0.06)',
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: '#1a4a7a',
+        fill: true,
+        tension: 0.3,
+        order: 0
+      },
+      {
+        label: 'Expected closing cost',
+        data: PRICES.map(() => EV),
+        borderColor: '#2d6a4f',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        borderDash: [],
+        order: 1
+      },
+      {
+        label: 'Scenario high ($75k)',
+        data: PRICES.map(() => maxEst),
+        borderColor: '#c84b2f',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: '+1',
+        backgroundColor: 'rgba(200,75,47,0.06)',
+        tension: 0,
+        borderDash: [5,4],
+        order: 2
+      },
+      {
+        label: 'Scenario low ($45k)',
+        data: PRICES.map(() => minEst),
+        borderColor: '#2d6a4f',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        borderDash: [5,4],
+        order: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label(ctx) {
+            const v = Math.round(ctx.parsed.y);
+            return ` ${ctx.dataset.label}: $${v.toLocaleString()}`;
+          },
+          afterBody(items) {
+            const proc = items.find(i => i.dataset.label === 'Net proceeds');
+            if (!proc) return [];
+            const n = proc.parsed.y;
+            const gap = EV - n;
+            const lines = [''];
+            if (gap <= 0) lines.push(` Surplus over expected cost: $${Math.abs(gap).toLocaleString()}`);
+            else if (gap <= SAVINGS_HARD) lines.push(` Caution: $${gap.toLocaleString()} from savings needed`);
+            else lines.push(` Danger: $${gap.toLocaleString()} from savings needed`);
+            return lines;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { autoSkip: false, maxRotation: 45, font: { size: 11, family: 'DM Mono' } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      y: { min: 10000, max: 85000, ticks: { callback: v => '$'+(v/1000)+'k', font: { size: 11, family: 'DM Mono' } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+    }
+  }
+});
+
+// Legend
+document.getElementById('main-legend').innerHTML = `
+  <div class="legend-item"><span class="legend-swatch" style="background:#1a4a7a;"></span>Net proceeds</div>
+  <div class="legend-item"><span class="legend-line" style="background:#2d6a4f;"></span>Expected closing cost ($${EV.toLocaleString()})</div>
+  <div class="legend-item"><span class="legend-line" style="background:#c84b2f;border-top:2px dashed #c84b2f;height:0;"></span>Scenario high ($75k)</div>
+  <div class="legend-item"><span class="legend-line" style="background:#2d6a4f;border-top:2px dashed #2d6a4f;height:0;"></span>Scenario low ($45k)</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:#c8e6d6;border:1px solid #2d6a4f;"></span>Safe zone</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:#fde8cc;border:1px solid #b5470a;"></span>Caution zone</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:#fac8c8;border:1px solid #8b2020;"></span>Danger zone</div>
+`;
+
+// ── Sensitivity Table ─────────────────────────────────────────────────────────
+const sensTable = document.getElementById('sens-table');
+let html = '<thead><tr><th>Sale price</th>';
+ESTIMATES.forEach((e,i) => { html += `<th>${EST_LABELS[i]}</th>`; });
+html += '</tr></thead><tbody>';
+[...PRICES].reverse().forEach(price => {
+  const n = net(price);
+  const isBase = price === 330000;
+  html += `<tr><td class="row-label">${'$'+(price/1000)+'k'}${isBase?' ★':''}</td>`;
+  ESTIMATES.forEach(e => {
+    const gap = n - e;
+    let cls = gap >= 0 ? 'sens-cell-safe' : gap >= -SAVINGS_HARD ? 'sens-cell-caution' : 'sens-cell-danger';
+    const txt = gap >= 0 ? '+$'+gap.toLocaleString() : '-$'+Math.abs(gap).toLocaleString();
+    html += `<td class="${cls}">${txt}</td>`;
+  });
+  html += '</tr>';
+});
+html += '</tbody>';
+sensTable.innerHTML = html;
+
+// ── Probability Chart ─────────────────────────────────────────────────────────
+const probDiv = document.getElementById('prob-chart');
+let probHTML = '<div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);margin-bottom:1rem;">At each asking price — % of scenarios by outcome</div>';
+[...PRICES].reverse().forEach(price => {
+  const n = net(price);
+  const safe = ESTIMATES.filter(e => n >= e).length;
+  const caution = ESTIMATES.filter(e => n < e && n >= e - SAVINGS_HARD).length;
+  const danger = ESTIMATES.filter(e => n < e - SAVINGS_HARD).length;
+  const total = ESTIMATES.length;
+  const sp = Math.round(safe/total*100);
+  const cp = Math.round(caution/total*100);
+  const dp = 100 - sp - cp;
+  probHTML += `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-light);width:48px;flex-shrink:0;">${'$'+(price/1000)+'k'}</div>
+      <div style="flex:1;height:20px;display:flex;border-radius:3px;overflow:hidden;">
+        ${sp>0?`<div style="width:${sp}%;background:#2d6a4f;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-mono);color:white;">${sp>8?sp+'%':''}</div>`:''}
+        ${cp>0?`<div style="width:${cp}%;background:#b5470a;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-mono);color:white;">${cp>8?cp+'%':''}</div>`:''}
+        ${dp>0?`<div style="width:${dp}%;background:#8b2020;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-mono);color:white;">${dp>8?dp+'%':''}</div>`:''}
+      </div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-muted);width:80px;flex-shrink:0;">${sp}% safe</div>
+    </div>`;
+});
+probHTML += `
+  <div style="display:flex;gap:1.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:11px;font-family:var(--font-mono);">
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#2d6a4f;border-radius:2px;"></span><span style="color:var(--ink-light);">No savings needed</span></span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#b5470a;border-radius:2px;"></span><span style="color:var(--ink-light);">Within $5k tolerance</span></span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#8b2020;border-radius:2px;"></span><span style="color:var(--ink-light);">Exceeds tolerance</span></span>
+  </div>`;
+probDiv.innerHTML = probHTML;
+
+// ── Scenario Table ────────────────────────────────────────────────────────────
+const scenTable = document.getElementById('scenario-table');
+let shtml = `<thead><tr>
+  <th>Sale price</th>
+  <th>Broker fee</th>
+  <th>Total deductions</th>
+  <th>Net proceeds</th>
+  <th>vs. expected ($${EV.toLocaleString()})</th>
+  <th>Savings needed</th>
+  <th>Status</th>
+</tr></thead><tbody>`;
+
+[...PRICES].reverse().forEach(price => {
+  const n = net(price);
+  const broker = Math.round(price * BROKER);
+  const deductions = Math.round(MORTGAGE + STATIC + broker + TAXES);
+  const vsEV = n - EV;
+  const savingsNeeded = Math.max(0, EV - n);
+  const isBase = price === 330000;
+  let rowCls = isBase ? 'row-base' : vsEV >= 0 ? 'row-safe' : vsEV >= -SAVINGS_HARD ? 'row-caution' : 'row-danger';
+  let pill = vsEV >= 0
+    ? '<span class="pill pill-safe">Safe</span>'
+    : vsEV >= -SAVINGS_HARD
+    ? '<span class="pill pill-caution">Caution</span>'
+    : '<span class="pill pill-danger">Danger</span>';
+  shtml += `<tr class="${rowCls}">
+    <td>$${(price/1000).toFixed(0)}k${isBase?' ★':''}</td>
+    <td>$${broker.toLocaleString()}</td>
+    <td>$${deductions.toLocaleString()}</td>
+    <td>$${n.toLocaleString()}</td>
+    <td>${vsEV>=0?'+':'-'}$${Math.abs(vsEV).toLocaleString()}</td>
+    <td>${savingsNeeded>0?'$'+savingsNeeded.toLocaleString():'—'}</td>
+    <td>${pill}</td>
+  </tr>`;
+});
+shtml += '</tbody>';
+scenTable.innerHTML = shtml;
+
+// ── Maximum Regret ────────────────────────────────────────────────────────────
+const worstPrice = Math.min(...PRICES);
+const worstCost  = Math.max(...ESTIMATES);
+const bestPrice  = 330000;
+const bestCost   = Math.min(...ESTIMATES);
+const maxRegret  = Math.max(0, worstCost - net(worstPrice));
+const bestCase   = net(bestPrice) - bestCost;
+const baseCase   = net(330000) - EV;
+
+const regretKpis = [
+  { label: 'Best case surplus', value: fmtPlain(bestCase), cls: 'green', sub: '$330k sale + $45k closing' },
+  { label: 'Base case surplus', value: fmtPlain(baseCase), cls: 'green', sub: '$330k sale + avg closing' },
+  { label: 'Maximum regret', value: '-$'+maxRegret.toLocaleString(), cls: 'red', sub: '$270k sale + $75k closing' },
+  { label: 'Regret at hard floor', value: fmtPlain(net(hardFloor||310000)-EV), cls: 'amber', sub: hardFloor ? '$'+(hardFloor/1000)+'k sale + avg closing' : 'n/a' },
+];
+const regretGrid = document.getElementById('regret-grid');
+regretKpis.forEach(k => {
+  regretGrid.innerHTML += `<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.cls}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`;
+});
+
+// ── Footer date ───────────────────────────────────────────────────────────────
+document.getElementById('gen-date').textContent = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+</script>
+</body>
+</html>
