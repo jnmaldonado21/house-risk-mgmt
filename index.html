@@ -554,7 +554,7 @@ function recalc() {
 
   // KPIs
   document.getElementById('kpi-grid').innerHTML=[
-    {l:'Net proceeds @ ask',    v:$d(n0),      c:surplus>=0?'green':'red', s:'Current asking price'},
+    {l:'Net proceeds at ask',    v:$d(n0),      c:surplus>=0?'green':'red', s:'Current asking price'},
     {l:'Expected closing cost', v:$d(EV),      c:'',                       s:`Avg of ${ests.length} estimates`},
     {l:'Current surplus',       v:$pm(surplus),c:surplus>=0?'green':'red', s:surplus>=0?'Above expected cost':'Below expected cost'},
     {l:'Preferred floor',       v:pFloor?'$'+(pFloor/1000)+'k':'N/A',c:'',s:'Zero savings needed'},
