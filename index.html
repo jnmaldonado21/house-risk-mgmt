@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Sale Risk Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --ink-light: #3d3d55;
+    --paper: #f8f7f4;
+    --paper-2: #f0efe9;
+    --paper-3: #e8e6de;
+    --accent: #c84b2f;
+    --accent-light: #f5ece9;
+    --green: #1e5c38;
+    --green-light: #e3f5eb;
+    --amber: #8a3a00;
+    --amber-light: #fdf0e4;
+    --blue: #1a4a7a;
+    --blue-light: #e8f0f8;
+    --border: rgba(26,26,46,0.13);
+    --border-strong: rgba(26,26,46,0.26);
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Source Sans 3', system-ui, sans-serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+    --r: 7px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: clamp(15px, 2vw, 17px);
+    line-height: 1.65;
+    min-height: 100vh;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: clamp(1.25rem, 5vw, 3rem) clamp(1rem, 5vw, 2.5rem) 5rem;
+  }
+
+  /* Settings toggle */
+  .stg-toggle {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-bottom: 2rem; cursor: pointer;
+    opacity: 0.38; transition: opacity 0.18s;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+    padding: 4px 0;
+  }
+  .stg-toggle:hover, .stg-toggle:focus { opacity: 0.7; outline: none; }
+
+  .stg-icon {
+    width: 17px; height: 17px;
+    border: 1.5px solid var(--ink); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; line-height: 1;
+    transition: transform 0.2s; flex-shrink: 0;
+  }
+  .stg-icon.open { transform: rotate(45deg); }
+
+  .stg-lbl {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink);
+  }
+
+  /* Settings panel */
+  .stg-panel {
+    display: none;
+    background: var(--paper-2); border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.75rem);
+    margin-bottom: 2.5rem;
+  }
+  .stg-panel.open { display: block; }
+
+  .stg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+    gap: 1rem; margin-bottom: 1.25rem;
+  }
+
+  .field label {
+    display: block; font-size: 12px; color: var(--ink-light);
+    margin-bottom: 4px; font-family: var(--font-mono); letter-spacing: 0.04em;
+  }
+  .field input[type="number"] {
+    width: 100%; background: var(--paper);
+    border: 1px solid var(--border-strong); border-radius: 5px;
+    color: var(--ink); font-family: var(--font-mono); font-size: 15px;
+    padding: 8px 11px; outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+
+  .ests-lbl {
+    display: block; font-size: 12px; color: var(--ink-light);
+    font-family: var(--font-mono); letter-spacing: 0.04em; margin-bottom: 0.6rem;
+  }
+  .ests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 118px), 1fr));
+    gap: 0.5rem; margin-bottom: 0.75rem;
+  }
+  .est-f {
+    display: flex; align-items: center;
+    background: var(--paper); border: 1px solid var(--border-strong);
+    border-radius: 5px; overflow: hidden;
+  }
+  .est-f span {
+    font-size: 12px; color: var(--ink-light); padding: 7px 7px;
+    font-family: var(--font-mono); flex-shrink: 0;
+  }
+  .est-f input {
+    background: transparent; border: none; color: var(--ink);
+    font-family: var(--font-mono); font-size: 14px;
+    padding: 7px 7px 7px 0; outline: none; width: 100%; min-width: 0;
+    -webkit-appearance: none;
+  }
+
+  .btn-go {
+    background: var(--accent); color: white; border: none;
+    border-radius: 6px; font-family: var(--font-body);
+    font-size: 16px; font-weight: 600; padding: 11px 28px;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 0.5rem;
+    touch-action: manipulation; min-height: 44px; min-width: 44px;
+  }
+  .btn-go:hover { opacity: 0.88; }
+  .btn-go:active { opacity: 0.72; }
+
+  /* Header */
+  .hdr {
+    border-bottom: 1.5px solid var(--border-strong);
+    padding-bottom: 1.75rem; margin-bottom: 2.75rem;
+  }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 0.6rem;
+  }
+  .hdr h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 6vw, 3.2rem);
+    font-weight: 400; line-height: 1.1;
+    color: var(--ink); margin-bottom: 0.65rem;
+  }
+  .hdr-sub {
+    color: var(--ink-light); font-size: clamp(14px, 2vw, 16px);
+    max-width: 600px; line-height: 1.6;
+  }
+  .hdr-meta {
+    margin-top: 1rem; display: flex;
+    gap: 0.5rem 1.75rem; flex-wrap: wrap;
+  }
+  .meta-i { font-size: clamp(13px, 1.8vw, 15px); color: var(--ink-light); }
+  .meta-i strong { color: var(--ink); font-weight: 600; }
+
+  /* Section */
+  .sec { margin-bottom: 2.75rem; }
+  .sec-hdr {
+    display: flex; align-items: baseline; gap: 0.75rem;
+    margin-bottom: 1.2rem; padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sec-n {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--accent); letter-spacing: 0.08em; flex-shrink: 0;
+  }
+  .sec-t {
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 3vw, 1.35rem);
+    font-weight: 400; color: var(--ink);
+  }
+
+  /* KPI grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr));
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: var(--r);
+    overflow: hidden; margin-bottom: 1.75rem;
+  }
+  .kpi { background: var(--paper); padding: 1rem 1.1rem; }
+  .kpi-l {
+    font-size: 12px; font-family: var(--font-mono);
+    color: var(--ink-light); margin-bottom: 0.3rem; line-height: 1.3;
+  }
+  .kpi-v {
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 4vw, 1.75rem);
+    line-height: 1; color: var(--ink);
+  }
+  .kpi-v.green { color: var(--green); }
+  .kpi-v.amber { color: var(--amber); }
+  .kpi-v.red   { color: var(--accent); }
+  .kpi-s { font-size: 12px; color: var(--ink-light); margin-top: 0.25rem; }
+
+  /* Chart */
+  .chart-box {
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: clamp(1rem, 3vw, 1.5rem); margin-bottom: 1rem; overflow: hidden;
+  }
+  .chart-ttl {
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-light); margin-bottom: 1rem;
+  }
+  .canvas-wrap {
+    position: relative; width: 100%;
+    height: clamp(220px, 38vw, 340px);
+  }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 1rem;
+    margin-top: 1rem; padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .leg-i {
+    display: flex; align-items: center; gap: 6px;
+    font-size: clamp(12px, 1.7vw, 14px); color: var(--ink-light);
+  }
+  .leg-sw { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Note */
+  p.note {
+    font-size: clamp(14px, 2vw, 15px);
+    color: var(--ink-light); margin-bottom: 1rem; line-height: 1.7;
+  }
+
+  /* Scroll hint */
+  .scroll-hint {
+    display: none; font-size: 12px; font-family: var(--font-mono);
+    color: var(--ink-light); margin-bottom: 0.4rem; letter-spacing: 0.04em;
+  }
+
+  /* Sensitivity table */
+  .sens-wrap {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border); border-radius: var(--r);
+  }
+  .sens-tbl {
+    width: 100%; border-collapse: collapse;
+    font-size: clamp(11px, 1.5vw, 13px); font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+  .sens-tbl th {
+    padding: 0.5rem 0.6rem; background: var(--paper-2);
+    border: 1px solid var(--border); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-light); font-weight: 500; text-align: center;
+  }
+  .sens-tbl td {
+    padding: 0.4rem 0.6rem; border: 1px solid var(--border);
+    text-align: center; color: var(--ink);
+  }
+  .sens-tbl td.rl {
+    text-align: left; font-family: var(--font-body);
+    font-size: clamp(12px, 1.8vw, 14px); font-weight: 600;
+    background: var(--paper-2); position: sticky; left: 0; z-index: 1;
+  }
+  .cs { background: #cceedd; color: var(--green); font-weight: 500; }
+  .cc { background: #fce0b8; color: var(--amber); font-weight: 500; }
+  .cd { background: #f8cccc; color: #7a1a1a;     font-weight: 500; }
+
+  /* Prob chart */
+  .prob-box {
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: var(--r); padding: clamp(1rem, 3vw, 1.5rem);
+  }
+  .prob-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .prob-p {
+    font-family: var(--font-mono); font-size: clamp(11px, 1.5vw, 13px);
+    color: var(--ink-light); width: 52px; flex-shrink: 0;
+  }
+  .prob-bar {
+    flex: 1; height: 22px; display: flex;
+    border-radius: 3px; overflow: hidden; min-width: 0;
+  }
+  .prob-seg {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-family: var(--font-mono); color: white;
+  }
+  .prob-pct {
+    font-family: var(--font-mono); font-size: clamp(11px, 1.5vw, 12px);
+    color: var(--ink-light); width: 58px; flex-shrink: 0; text-align: right;
+  }
+  .prob-leg {
+    display: flex; flex-wrap: wrap; gap: 0.65rem 1.5rem;
+    margin-top: 1rem; padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: clamp(12px, 1.8vw, 14px);
+  }
+  .prob-leg span {
+    display: flex; align-items: center; gap: 6px; color: var(--ink-light);
+  }
+
+  /* Scenario table */
+  .scen-wrap {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border); border-radius: var(--r);
+  }
+  .risk-tbl { width: 100%; border-collapse: collapse; white-space: nowrap; }
+  .risk-tbl thead th {
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-light); font-weight: 500;
+    padding: 0.6rem 0.85rem; text-align: right;
+    border-bottom: 1.5px solid var(--border-strong); background: var(--paper-2);
+  }
+  .risk-tbl thead th:first-child { text-align: left; }
+  .risk-tbl tbody td {
+    padding: 0.55rem 0.85rem; text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: clamp(12px, 1.5vw, 14px);
+  }
+  .risk-tbl tbody td:first-child {
+    text-align: left; font-family: var(--font-body);
+    font-weight: 600; font-size: clamp(13px, 1.8vw, 15px);
+    position: sticky; left: 0; z-index: 1;
+  }
+  .risk-tbl tbody tr:hover td { background: var(--paper-2); }
+  .risk-tbl tr.rb td { background: var(--blue-light); }
+  .risk-tbl tr.rs td { background: var(--green-light); }
+  .risk-tbl tr.rc td { background: var(--amber-light); }
+  .risk-tbl tr.rd td { background: #fdf0f0; }
+
+  .pill {
+    display: inline-block; font-family: var(--font-mono);
+    font-size: 11px; padding: 2px 8px; border-radius: 3px; font-weight: 500;
+  }
+  .ps { background: #b8dfc8; color: var(--green); }
+  .pc { background: #f8d8b0; color: var(--amber); }
+  .pd { background: #f8c0c0; color: #7a1a1a; }
+
+  /* Decision cards */
+  .dec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 1rem;
+  }
+  .dc { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .dc-hdr {
+    padding: 0.75rem 1rem; font-family: var(--font-mono);
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.07em; font-weight: 500;
+  }
+  .dc-hdr.g { background: var(--green-light); color: var(--green); }
+  .dc-hdr.a { background: var(--amber-light); color: var(--amber); }
+  .dc-hdr.r { background: #fdf0f0; color: #7a1a1a; }
+  .dc-body {
+    padding: 0.9rem 1rem;
+    font-size: clamp(13px, 1.8vw, 15px); line-height: 1.7; color: var(--ink-light);
+  }
+  .dc-body strong { color: var(--ink); font-weight: 600; display: block; margin-bottom: 0.35rem; }
+  .dc-body ul { padding-left: 1.1rem; margin-top: 0.35rem; }
+  .dc-body li { margin-bottom: 0.25rem; }
+
+  /* Callout */
+  .callout {
+    border-left: 3px solid var(--accent); padding: 1rem 1.25rem;
+    background: var(--accent-light); border-radius: 0 var(--r) var(--r) 0;
+    margin-top: 1.5rem;
+  }
+  .callout-ttl {
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 0.4rem;
+  }
+  .callout p { font-size: clamp(14px, 2vw, 16px); color: var(--ink-light); line-height: 1.7; }
+  .callout p + p { margin-top: 0.5rem; }
+
+  /* Footer */
+  .footer {
+    margin-top: 3.5rem; padding-top: 1.25rem;
+    border-top: 1px solid var(--border); font-size: 12px;
+    font-family: var(--font-mono); color: var(--ink-light); line-height: 1.9;
+  }
+
+  /* Responsive breakpoints */
+  @media (max-width: 480px) {
+    .scroll-hint { display: block; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .btn-go { width: 100%; }
+    .prob-p { width: 42px; font-size: 11px; }
+    .prob-pct { width: 46px; }
+  }
+
+  @media (min-width: 481px) and (max-width: 720px) {
+    .scroll-hint { display: block; }
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (min-width: 721px) {
+    .kpi-grid { grid-template-columns: repeat(6, 1fr); }
+    .stg-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Settings -->
+  <div class="stg-toggle" id="stg-tgl" onclick="toggleSettings()"
+       role="button" aria-expanded="false" aria-controls="stg-panel" tabindex="0"
+       onkeydown="if(event.key==='Enter'||event.key===' ')toggleSettings()">
+    <div class="stg-icon" id="stg-ic">+</div>
+    <span class="stg-lbl">Scenario Settings</span>
+  </div>
+
+  <div class="stg-panel" id="stg-panel">
+    <div class="stg-grid">
+      <div class="field"><label>Current asking price ($)</label><input type="number" id="ip-ask" value="330000" step="1000" inputmode="numeric"></div>
+      <div class="field"><label>Remaining mortgage ($)</label><input type="number" id="ip-mort" value="229611" step="1000" inputmode="numeric"></div>
+      <div class="field"><label>Static closing costs ($)</label><input type="number" id="ip-stat" value="3591" step="100" inputmode="numeric"></div>
+      <div class="field"><label>Broker fee (%)</label><input type="number" id="ip-brok" value="6" step="0.1" min="0" max="20" inputmode="decimal"></div>
+      <div class="field"><label>Pro-rated taxes ($)</label><input type="number" id="ip-tax" value="2268.94" step="10" inputmode="decimal"></div>
+      <div class="field"><label>Max savings tolerance ($)</label><input type="number" id="ip-sav" value="5000" step="500" inputmode="numeric"></div>
+    </div>
+    <span class="ests-lbl">Closing cost estimates for new home purchase — up to 10 (leave blank to skip)</span>
+    <div class="ests-grid" id="ests-grid"></div>
+    <button class="btn-go" onclick="recalc()">Recalculate Report</button>
+  </div>
+
+  <!-- Header -->
+  <header class="hdr">
+    <div class="eyebrow">Risk Analysis Report</div>
+    <h1>Home Sale &amp;<br><em>Purchase Closing</em> Risk</h1>
+    <p class="hdr-sub">A structured risk assessment of pricing scenarios for the sale of an existing property and the ability to fund closing costs on a new home purchase.</p>
+    <div class="hdr-meta" id="hdr-meta"></div>
+  </header>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">01</span><h2 class="sec-t">Executive Summary</h2></div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="callout">
+      <div class="callout-ttl">Risk Manager's Bottom Line</div>
+      <p id="c1"></p><p id="c2"></p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">02</span><h2 class="sec-t">Proceeds vs. Risk Zones</h2></div>
+    <div class="chart-box">
+      <div class="chart-ttl">Net sale proceeds at each asking price vs. closing cost scenario band</div>
+      <div class="canvas-wrap">
+        <canvas id="mainChart" role="img" aria-label="Line chart of net proceeds across asking price range with safe, caution, and danger zones.">Net proceeds decline as asking price decreases, crossing through risk zones relative to expected closing cost.</canvas>
+      </div>
+      <div class="legend" id="main-leg"></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">03</span><h2 class="sec-t">Sensitivity Analysis</h2></div>
+    <p class="note">Each cell shows the difference between net proceeds and that closing cost estimate. A <strong>positive number is a surplus</strong> — proceeds cover that scenario with money left over. A negative number is the amount you would need to pull from savings. Green = surplus. Amber = within your savings tolerance. Red = exceeds your tolerance.</p>
+    <div class="scroll-hint">← Scroll sideways to see all estimates →</div>
+    <div class="sens-wrap"><table class="sens-tbl" id="sens-tbl"></table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">04</span><h2 class="sec-t">Probability of Success</h2></div>
+    <p class="note">Treating all closing cost estimates as equally likely, the bars show — at each asking price — what percentage of scenarios leave you without needing savings, within tolerance, or over budget.</p>
+    <div class="prob-box" id="prob-box"></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">05</span><h2 class="sec-t">Full Scenario Table</h2></div>
+    <div class="scroll-hint">← Scroll sideways to see all columns →</div>
+    <div class="scen-wrap"><table class="risk-tbl" id="scen-tbl"></table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">06</span><h2 class="sec-t">Decision Matrix</h2></div>
+    <div class="dec-grid" id="dec-grid"></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-hdr"><span class="sec-n">07</span><h2 class="sec-t">Maximum Regret Analysis</h2></div>
+    <div class="kpi-grid" id="reg-grid"></div>
+    <p class="note" style="margin-top:1rem;">Maximum regret is the worst possible outcome — sale price at its lowest <em>and</em> closing costs at their highest simultaneously. A risk professional uses this as a hard boundary, not an expected outcome.</p>
+  </section>
+
+  <footer class="footer">
+    <div>Generated: <span id="gen-date"></span></div>
+    <div id="ftr-assumptions"></div>
+    <div style="margin-top:.2rem;opacity:.65;">For personal financial planning only. Not professional financial or legal advice.</div>
+  </footer>
+</div>
+
+<script>
+const DEFAULTS = [75000,72000,70000,65000,60000,56000,50000,49000,50000,''];
+let chartInst = null;
+
+function buildEsts() {
+  const g = document.getElementById('ests-grid');
+  g.innerHTML = DEFAULTS.map((v,i) =>
+    `<div class="est-f"><span>#${i+1}</span><input type="number" id="e${i}" value="${v!==''?v:''}" placeholder="e.g. 55000" inputmode="numeric"></div>`
+  ).join('');
+}
+
+function vals() {
+  const ask  = +document.getElementById('ip-ask').value  || 330000;
+  const mort = +document.getElementById('ip-mort').value || 0;
+  const stat = +document.getElementById('ip-stat').value || 0;
+  const brok = (+document.getElementById('ip-brok').value || 6) / 100;
+  const tax  = +document.getElementById('ip-tax').value  || 0;
+  const sav  = +document.getElementById('ip-sav').value  || 5000;
+  const ests = [];
+  for (let i=0;i<10;i++) { const v=document.getElementById('e'+i)?.value; if(v&&!isNaN(+v)) ests.push(+v); }
+  const prices = Array.from({length:13},(_,i)=>ask-i*5000);
+  return {ask,mort,stat,brok,tax,sav,ests,prices};
+}
+
+function np(p,m,s,b,t) { return Math.round(p-m-s-Math.round(p*b)-t); }
+function $d(n)  { return '$'+Math.abs(Math.round(n)).toLocaleString(); }
+function $pm(n) { n=Math.round(n); return(n>=0?'+$':'-$')+Math.abs(n).toLocaleString(); }
+
+function toggleSettings() {
+  const p=document.getElementById('stg-panel'),ic=document.getElementById('stg-ic'),t=document.getElementById('stg-tgl');
+  const o=p.classList.toggle('open');
+  ic.classList.toggle('open',o); ic.textContent=o?'×':'+';
+  t.setAttribute('aria-expanded',String(o));
+}
+
+function recalc() {
+  const {ask,mort,stat,brok,tax,sav,ests,prices}=vals();
+  if(!ests.length){alert('Enter at least one closing cost estimate.');return;}
+
+  const EV=Math.round(ests.reduce((a,b)=>a+b,0)/ests.length);
+  const lo=Math.min(...ests), hi=Math.max(...ests);
+  const nets=prices.map(p=>np(p,mort,stat,brok,tax));
+  const plbls=prices.map(p=>'$'+(p/1000)+'k');
+  const n0=nets[0]; // nets[0] = proceeds at the asking price (highest price, first in array)
+
+  function floor(tol){for(let i=nets.length-1;i>=0;i--){if(nets[i]>=EV-tol)return prices[i];}return null;}
+  const pFloor=floor(0), hFloor=floor(sav), surplus=n0-EV;
+
+  // Header meta
+  document.getElementById('hdr-meta').innerHTML=`
+    <div class="meta-i">Current ask <strong>${$d(ask)}</strong></div>
+    <div class="meta-i">Mortgage <strong>${$d(mort)}</strong></div>
+    <div class="meta-i">Savings tolerance <strong>$0 preferred / ${$d(sav)} max</strong></div>
+    <div class="meta-i">Estimates <strong>${$d(lo)} – ${$d(hi)} (${ests.length})</strong></div>`;
+
+  // KPIs
+  document.getElementById('kpi-grid').innerHTML=[
+    {l:'Net proceeds @ ask',    v:$d(n0),      c:surplus>=0?'green':'red', s:'Current asking price'},
+    {l:'Expected closing cost', v:$d(EV),      c:'',                       s:`Avg of ${ests.length} estimates`},
+    {l:'Current surplus',       v:$pm(surplus),c:surplus>=0?'green':'red', s:surplus>=0?'Above expected cost':'Below expected cost'},
+    {l:'Preferred floor',       v:pFloor?'$'+(pFloor/1000)+'k':'N/A',c:'',s:'Zero savings needed'},
+    {l:'Hard floor',            v:hFloor?'$'+(hFloor/1000)+'k':'N/A',c:'amber',s:`Up to ${$d(sav)} savings`},
+    {l:'Estimate spread',       v:$d(hi-lo),   c:'red',                    s:`${$d(lo)} – ${$d(hi)}`},
+  ].map(k=>`<div class="kpi"><div class="kpi-l">${k.l}</div><div class="kpi-v ${k.c}">${k.v}</div><div class="kpi-s">${k.s}</div></div>`).join('');
+
+  // Callout
+  document.getElementById('c1').innerHTML=
+    `If you sell at your current asking price of <strong>${$d(ask)}</strong>, your estimated net proceeds after mortgage payoff, broker fee, taxes, and closing costs are <strong>${$d(n0)}</strong>. `+
+    `The average of your ${ests.length} closing cost estimates for the new home is <strong>${$d(EV)}</strong>, which means at <strong>${$d(ask)}</strong> you would have a <strong>${surplus>=0?'surplus of '+$d(surplus)+' — enough to close with no savings needed':'shortfall of '+$d(Math.abs(surplus))}</strong>.`;
+  document.getElementById('c2').innerHTML=
+    (pFloor
+      ? `Your <strong>preferred floor</strong> — the lowest sale price where you cover the average closing cost without touching savings — is <strong>${$d(pFloor)}</strong>. `
+      : '') +
+    (hFloor && hFloor !== pFloor
+      ? `Your <strong>hard floor</strong> — where you'd need up to <strong>${$d(sav)}</strong> from savings — is <strong>${$d(hFloor)}</strong>. Pricing between ${$d(hFloor)} and ${$d(pFloor)} is a calculated risk within your stated tolerance. `
+      : '') +
+    `The biggest unknown is <strong>which closing cost estimate is accurate</strong> — your ${ests.length} quotes range from ${$d(lo)} to ${$d(hi)}, a spread of <strong>${$d(hi-lo)}</strong>. Getting a confirmed number from your lender before accepting any offer below <strong>${$d((pFloor||ask))}</strong> would significantly reduce your risk.`;
+
+  // Chart
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const bgPlug={id:'bgz',beforeDraw(c){
+    const{ctx,chartArea:{left,right,top,bottom},scales:{y}}=c;
+    const sy=y.getPixelForValue(EV),cy=y.getPixelForValue(EV-sav);
+    ctx.save();
+    ctx.fillStyle='rgba(200,230,210,0.28)';ctx.fillRect(left,top,right-left,sy-top);
+    ctx.fillStyle='rgba(255,218,160,0.28)';ctx.fillRect(left,sy,right-left,cy-sy);
+    ctx.fillStyle='rgba(250,185,185,0.28)';ctx.fillRect(left,cy,right-left,bottom-cy);
+    ctx.font='10px DM Mono,monospace';
+    ctx.fillStyle='rgba(30,92,56,.5)'; ctx.fillText('SAFE ZONE',left+8,top+15);
+    ctx.fillStyle='rgba(138,58,0,.5)'; ctx.fillText('CAUTION',left+8,sy+15);
+    ctx.fillStyle='rgba(200,75,47,.5)';ctx.fillText('DANGER',left+8,cy+15);
+    ctx.restore();
+  }};
+
+  const yMin=Math.max(0,Math.min(...nets)-8000);
+  const yMax=Math.max(...nets)+14000;
+
+  chartInst=new Chart(document.getElementById('mainChart'),{
+    type:'line',plugins:[bgPlug],
+    data:{labels:plbls,datasets:[
+      {label:'Net proceeds',data:nets,borderColor:'#1a4a7a',backgroundColor:'rgba(26,74,122,0.07)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#1a4a7a',fill:true,tension:0.3,order:0},
+      {label:'Expected closing cost',data:prices.map(()=>EV),borderColor:'#1e5c38',borderWidth:2,pointRadius:0,fill:false,tension:0,order:1},
+      {label:`High (${$d(hi)})`,data:prices.map(()=>hi),borderColor:'#c84b2f',borderWidth:1.5,pointRadius:0,fill:false,tension:0,borderDash:[5,4],order:2},
+      {label:`Low (${$d(lo)})`, data:prices.map(()=>lo),borderColor:'#1e5c38',borderWidth:1.5,pointRadius:0,fill:false,tension:0,borderDash:[5,4],order:2},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label(ctx){return` ${ctx.dataset.label}: $${Math.round(ctx.parsed.y).toLocaleString()}`;},
+          afterBody(items){
+            const pr=items.find(i=>i.dataset.label==='Net proceeds');
+            if(!pr)return[];
+            const gap=EV-pr.parsed.y;
+            if(gap<=0)return['',` Surplus: $${Math.abs(Math.round(gap)).toLocaleString()} over expected`];
+            if(gap<=sav)return['',` Caution: $${Math.round(gap).toLocaleString()} from savings needed`];
+            return['',` Danger: $${Math.round(gap).toLocaleString()} from savings needed`];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:{autoSkip:false,maxRotation:45,font:{size:11,family:'DM Mono'}},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{min:yMin,max:yMax,ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k',font:{size:11,family:'DM Mono'}},grid:{color:'rgba(0,0,0,0.05)'}}
+      }
+    }
+  });
+
+  document.getElementById('main-leg').innerHTML=`
+    <div class="leg-i"><span class="leg-sw" style="background:#1a4a7a"></span>Net proceeds</div>
+    <div class="leg-i"><span class="leg-sw" style="background:#1e5c38"></span>Expected cost (${$d(EV)})</div>
+    <div class="leg-i"><span class="leg-sw" style="background:#c84b2f;opacity:.6"></span>High (${$d(hi)})</div>
+    <div class="leg-i"><span class="leg-sw" style="background:#1e5c38;opacity:.5"></span>Low (${$d(lo)})</div>
+    <div class="leg-i"><span class="leg-sw" style="background:#c8e6d6;border:1px solid #1e5c38"></span>Safe zone</div>
+    <div class="leg-i"><span class="leg-sw" style="background:#fde8cc;border:1px solid #8a3a00"></span>Caution zone</div>
+    <div class="leg-i"><span class="leg-sw" style="background:#f8cccc;border:1px solid #7a1a1a"></span>Danger zone</div>`;
+
+  // Sensitivity
+  let ht='<thead><tr><th>Sale price</th>';
+  ests.forEach(e=>{ht+=`<th>${$d(e)}</th>`;});
+  ht+='</tr></thead><tbody>';
+  prices.forEach((p,pi)=>{
+    const n=nets[pi],base=pi===prices.length-1;
+    ht+=`<tr><td class="rl">${$d(p)}${base?' ★':''}</td>`;
+    ests.forEach(e=>{
+      const g=n-e;
+      ht+=`<td class="${g>=0?'cs':g>=-sav?'cc':'cd'}">${g>=0?'+$':'-$'}${Math.abs(Math.round(g)).toLocaleString()}</td>`;
+    });
+    ht+='</tr>';
+  });
+  document.getElementById('sens-tbl').innerHTML=ht+'</tbody>';
+
+  // Prob bars
+  let ph='<div style="font-size:12px;color:var(--ink-light);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.9rem;">At each price — % of scenarios by outcome</div>';
+  prices.forEach((p,pi)=>{
+    const n=nets[pi],tot=ests.length;
+    const safe=ests.filter(e=>n>=e).length;
+    const caut=ests.filter(e=>n<e&&n>=e-sav).length;
+    const dang=tot-safe-caut;
+    const sp=Math.round(safe/tot*100),cp=Math.round(caut/tot*100),dp=100-sp-cp;
+    ph+=`<div class="prob-row">
+      <div class="prob-p">${$d(p)}</div>
+      <div class="prob-bar">
+        ${sp>0?`<div class="prob-seg" style="width:${sp}%;background:#1e5c38">${sp>12?sp+'%':''}</div>`:''}
+        ${cp>0?`<div class="prob-seg" style="width:${cp}%;background:#8a3a00">${cp>12?cp+'%':''}</div>`:''}
+        ${dp>0?`<div class="prob-seg" style="width:${dp}%;background:#7a1a1a">${dp>12?dp+'%':''}</div>`:''}
+      </div>
+      <div class="prob-pct">${sp}% safe</div>
+    </div>`;
+  });
+  ph+=`<div class="prob-leg">
+    <span><span style="width:12px;height:12px;background:#1e5c38;border-radius:2px;flex-shrink:0"></span>No savings needed</span>
+    <span><span style="width:12px;height:12px;background:#8a3a00;border-radius:2px;flex-shrink:0"></span>Within tolerance</span>
+    <span><span style="width:12px;height:12px;background:#7a1a1a;border-radius:2px;flex-shrink:0"></span>Exceeds tolerance</span>
+  </div>`;
+  document.getElementById('prob-box').innerHTML=ph;
+
+  // Scenario table
+  let st=`<thead><tr><th>Sale price</th><th>Broker fee</th><th>Deductions</th><th>Net proceeds</th><th>vs. expected (${$d(EV)})</th><th>Savings needed</th><th>Status</th></tr></thead><tbody>`;
+  prices.forEach((p,pi)=>{
+    const n=nets[pi],ba=Math.round(p*brok),ded=Math.round(mort+stat+ba+tax);
+    const vsEV=n-EV,sn=Math.max(0,EV-n),base=pi===prices.length-1;
+    const rc=base?'rb':vsEV>=0?'rs':vsEV>=-sav?'rc':'rd';
+    const pill=vsEV>=0?'<span class="pill ps">Safe</span>':vsEV>=-sav?'<span class="pill pc">Caution</span>':'<span class="pill pd">Danger</span>';
+    st+=`<tr class="${rc}"><td>${$d(p)}${base?' ★':''}</td><td>${$d(ba)}</td><td>${$d(ded)}</td><td>${$d(n)}</td><td>${vsEV>=0?'+':'-'}$${Math.abs(vsEV).toLocaleString()}</td><td>${sn>0?$d(sn):'—'}</td><td>${pill}</td></tr>`;
+  });
+  document.getElementById('scen-tbl').innerHTML=st+'</tbody>';
+
+  // Decision matrix
+  const zA=pFloor?$d(pFloor):'N/A', zB=hFloor?$d(hFloor):'N/A', zBh=pFloor?$d(pFloor-5000):'N/A';
+  document.getElementById('dec-grid').innerHTML=`
+    <div class="dc"><div class="dc-hdr g">Zone A — Safe (${zA} – ${$d(ask)})</div>
+      <div class="dc-body"><strong>Recommended operating range</strong>Net proceeds cover expected closing cost with surplus. No savings required.
+        <ul><li>Accept offers at or above ${zA}</li><li>Standard negotiation leverage applies</li><li>Buffer holds even if closing costs trend high</li></ul>
+      </div></div>
+    <div class="dc"><div class="dc-hdr a">Zone B — Caution (${zB} – ${zBh})</div>
+      <div class="dc-body"><strong>Acceptable with conditions</strong>Proceeds fall short by up to ${$d(sav)}. Within tolerance, but risk rises if costs land above average.
+        <ul><li>Only accept if closing cost is confirmed ≤ average</li><li>Have savings liquid before signing</li><li>Get final closing cost in writing from lender</li></ul>
+      </div></div>
+    <div class="dc"><div class="dc-hdr r">Zone C — Danger (Below ${zB})</div>
+      <div class="dc-body"><strong>Exceeds stated risk tolerance</strong>Savings requirement surpasses ${$d(sav)} under an average closing cost scenario.
+        <ul><li>Do not accept unless closing cost is confirmed</li><li>Re-evaluate with lender directly</li><li>Only viable if lowest estimate is confirmed</li></ul>
+      </div></div>`;
+
+  // Regret
+  const bCase=n0-lo, bsCase=n0-EV, mReg=Math.max(0,hi-Math.min(...nets));
+  const rFloor=hFloor?np(hFloor,mort,stat,brok,tax)-EV:null;
+  document.getElementById('reg-grid').innerHTML=[
+    {l:'Best case surplus',   v:$d(bCase),   c:'green',s:`${$d(ask)} sale + ${$d(lo)} closing`},
+    {l:'Base case surplus',   v:$pm(bsCase), c:bsCase>=0?'green':'red',s:`${$d(ask)} sale + avg closing`},
+    {l:'Maximum regret',      v:'-$'+mReg.toLocaleString(),c:'red',s:`${$d(Math.min(...prices))} sale + ${$d(hi)} closing`},
+    {l:'Regret at hard floor',v:rFloor!==null?$pm(rFloor):'N/A',c:'amber',s:hFloor?`${$d(hFloor)} sale + avg closing`:'No floor found'},
+  ].map(k=>`<div class="kpi"><div class="kpi-l">${k.l}</div><div class="kpi-v ${k.c}">${k.v}</div><div class="kpi-s">${k.s}</div></div>`).join('');
+
+  // Footer
+  document.getElementById('ftr-assumptions').textContent=
+    `Assumptions: Mortgage ${$d(mort)} · Static costs ${$d(stat)} · Broker ${(brok*100).toFixed(1)}% · Taxes ${$d(tax)} · ${ests.length} estimates equally weighted`;
+  document.getElementById('gen-date').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+}
+
+buildEsts();
+recalc();
+</script>
+</body>
+</html>
